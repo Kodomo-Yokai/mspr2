@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Infos Système</title>
@@ -21,15 +22,93 @@
         </div>
 
         <div class="row mt-4">
-            <div class="col-md-4">{{ cpu_chart | safe }}</div>
-            <div class="col-md-4">{{ ram_chart | safe }}</div>
-            <div class="col-md-4">{{ disk_chart | safe }}</div>
+            <div class="col-md-4"><canvas id="cpuChart"></canvas></div>
+            <div class="col-md-4"><canvas id="ramChart"></canvas></div>
+            <div class="col-md-4"><canvas id="diskChart"></canvas></div>
+        </div>                         
         </div>
     </div>
     <script>
-        setInterval(function() {
-            location.reload();
-        }, 5000);  // 5000ms = 5s
+        function updateCharts() {
+            fetch('/update_data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('cpu_chart').innerHTML = data.cpu_chart;
+                    document.getElementById('ram_chart').innerHTML = data.ram_chart;
+                    document.getElementById('disk_chart').innerHTML = data.disk_chart;
+                })
+                .catch(error => console.error('Erreur lors du rafraîchissement:', error));
+        }
+    
+        setInterval(updateCharts, 5000);  // Rafraîchit toutes les 5 secondes
     </script>
+    <script>
+        function drawCharts(data) {
+            Plotly.react("cpu_chart", [data.cpu], { title: "Utilisation CPU (%)" });
+            Plotly.react("ram_chart", [data.ram], { title: "Utilisation RAM (%)" });
+            Plotly.react("disk_chart", [data.disk], { title: "Utilisation Stockage (%)" });
+        }
+    
+        function updateCharts() {
+            fetch('/update_data')
+                .then(response => response.json())
+                .then(data => {
+                    drawCharts(data);
+                })
+                .catch(error => console.error('Erreur lors du rafraîchissement:', error));
+        }
+    
+        // Charger les graphiques au démarrage
+        updateCharts();
+    
+        // Rafraîchir toutes les 5 secondes
+        setInterval(updateCharts, 5000);
+    </script>    
 </body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let ctxCpu = document.getElementById('cpuChart').getContext('2d');
+    let ctxRam = document.getElementById('ramChart').getContext('2d');
+    let ctxDisk = document.getElementById('diskChart').getContext('2d');
+
+    let cpuChart = new Chart(ctxCpu, {
+        type: 'doughnut',
+        data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#ff4d4d', '#cccccc'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    let ramChart = new Chart(ctxRam, {
+        type: 'doughnut',
+        data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#4d79ff', '#cccccc'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    let diskChart = new Chart(ctxDisk, {
+        type: 'doughnut',
+        data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#4dff4d', '#cccccc'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    function updateCharts() {
+        fetch('/update_data')
+        .then(response => response.json())
+        .then(data => {
+            console.log("🔹 Données reçues :", data); // DEBUG : Vérifie les données
+
+            // Mise à jour des graphiques
+            cpuChart.data.datasets[0].data = [data.cpu, 100 - data.cpu];
+            ramChart.data.datasets[0].data = [data.ram, 100 - data.ram];
+            diskChart.data.datasets[0].data = [data.disk, 100 - data.disk];
+
+            cpuChart.update();
+            ramChart.update();
+            diskChart.update();
+        })
+        .catch(error => console.error('Erreur de mise à jour :', error));
+    }
+
+    // Rafraîchir toutes les 5 secondes
+    setInterval(updateCharts, 5000);
+    updateCharts();  // Met à jour immédiatement au chargement
+</script>
 </html>
