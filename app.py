@@ -1,9 +1,9 @@
 from flask import Flask, render_template
+from flask import jsonify
 import psutil
 import socket
 import plotly.graph_objs as go
 import plotly.io as pio
-
 app = Flask(__name__)
 
 def get_system_info():
