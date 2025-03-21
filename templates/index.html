@@ -2,45 +2,47 @@
 <html lang="fr">
 <head>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Infos Système</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        /* Empêche l'agrandissement infini des graphes */
         .chart-container {
             width: 100%;
-            height: 250px; /* Hauteur fixe */
+            height: 250px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-    </style>
-    <style>
-        /* Mode clair (par défaut) */
+
         body {
             background-color: #f8f9fa;
             color: #212529;
         }
+
         .dark-mode {
             background-color: #212529 !important;
             color: #f8f9fa !important;
         }
+
         .dark-mode .list-group-item {
             background-color: #343a40 !important;
             color: #f8f9fa !important;
             border-color: #454d55;
         }
+
         .dark-mode .card {
             background-color: #343a40 !important;
             color: #f8f9fa !important;
             border-color: #454d55;
         }
+
         .toggle-container {
             text-align: right;
             margin-bottom: 10px;
         }
-    </style>    
+    </style>
 </head>
 <body class="bg-light">
     <div class="container mt-4">
@@ -82,32 +84,54 @@
     </div>
 
     <script>
-        // Initialisation des graphiques avec Chart.js
-        let cpuChart = new Chart(document.getElementById('cpuChart').getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#ff4d4d', '#cccccc'] }] },
-            options: { responsive: true, maintainAspectRatio: true }
-        });
+        // Configuration des graphiques avec Chart.js et affichage des pourcentages au centre
+        const createChart = (ctx, label, colorUsed, colorFree) => {
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Utilisé', 'Libre'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: [colorUsed, colorFree],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        tooltip: {
+                            enabled: true
+                        },
+                        datalabels: {
+                            formatter: (value, context) => {
+                                const sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = (value / sum * 100).toFixed(1) + '%';
+                                return context.dataIndex === 0 ? percentage : ''; // Affiche seulement pour "Utilisé"
+                            },
+                            color: '#fff',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels] // Activer Datalabels Plugin
+            });
+        };
 
-        let ramChart = new Chart(document.getElementById('ramChart').getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#4d79ff', '#cccccc'] }] },
-            options: { responsive: true, maintainAspectRatio: true }
-        });
-
-        let diskChart = new Chart(document.getElementById('diskChart').getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: ['Utilisé', 'Libre'], datasets: [{ data: [0, 100], backgroundColor: ['#4dff4d', '#cccccc'] }] },
-            options: { responsive: true, maintainAspectRatio: true }
-        });
+        // Initialisation des graphiques
+        const cpuChart = createChart(document.getElementById('cpuChart').getContext('2d'), 'Utilisation CPU', '#ff4d4d', '#cccccc');
+        const ramChart = createChart(document.getElementById('ramChart').getContext('2d'), 'Utilisation RAM', '#4d79ff', '#cccccc');
+        const diskChart = createChart(document.getElementById('diskChart').getContext('2d'), 'Utilisation Stockage', '#4dff4d', '#cccccc');
 
         // Fonction de mise à jour des graphiques
-        function updateCharts() {
+        const updateCharts = () => {
             fetch('/update_data')
             .then(response => response.json())
             .then(data => {
                 console.log("🔹 Données reçues :", data); // DEBUG
-
                 cpuChart.data.datasets[0].data = [data.cpu, 100 - data.cpu];
                 ramChart.data.datasets[0].data = [data.ram, 100 - data.ram];
                 diskChart.data.datasets[0].data = [data.disk, 100 - data.disk];
@@ -117,28 +141,26 @@
                 diskChart.update();
             })
             .catch(error => console.error('❌ Erreur de mise à jour :', error));
-        }
+        };
 
-        // Rafraîchir toutes les 5 secondes
+        // Rafraîchissement des graphiques toutes les 5 secondes
         setInterval(updateCharts, 5000);
-        updateCharts();  // Mise à jour immédiate au chargement
-    </script>
-    <script>
+        updateCharts();
+
+        // Gestion du mode sombre
         document.addEventListener("DOMContentLoaded", function () {
             const toggleButton = document.getElementById("toggleDarkMode");
             const body = document.body;
-    
-            // Vérifier si un mode est enregistré dans localStorage
+
             if (localStorage.getItem("darkMode") === "enabled") {
                 body.classList.add("dark-mode");
                 toggleButton.textContent = "☀️ Mode clair";
                 toggleButton.classList.replace("btn-dark", "btn-light");
             }
-    
-            // Gestion du clic sur le bouton
+
             toggleButton.addEventListener("click", function () {
                 body.classList.toggle("dark-mode");
-    
+
                 if (body.classList.contains("dark-mode")) {
                     localStorage.setItem("darkMode", "enabled");
                     toggleButton.textContent = "☀️ Mode clair";
@@ -150,6 +172,6 @@
                 }
             });
         });
-    </script>    
+    </script>
 </body>
 </html>
