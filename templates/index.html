@@ -38,18 +38,21 @@
             border-color: #454d55;
         }
 
-        .toggle-container {
-            text-align: right;
-            margin-bottom: 10px;
+        #toggleDarkMode {
+            position: absolute;
+            top: 15px; /* Espace par rapport au haut */
+            right: 15px; /* Espace par rapport à la droite */
+            z-index: 1000; /* Assure que le bouton reste au-dessus des autres éléments */
         }
     </style>
 </head>
 <body class="bg-light">
+    <!-- Bouton Mode Sombre dans le coin supérieur droit -->
+    <button id="toggleDarkMode" class="btn btn-dark">🌙 Mode sombre</button>
+
     <div class="container mt-4">
         <h1 class="text-center mb-4">Informations du Système</h1>
-        <div class="toggle-container">
-            <button id="toggleDarkMode" class="btn btn-dark">🌙 Mode sombre</button>
-        </div>        
+        
         <div class="row">
             <div class="col-md-6">
                 <ul class="list-group">
